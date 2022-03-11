@@ -91,18 +91,24 @@ def allowance(_owner: address, _spender: address) -> uint256:
 
 @external
 def approve(_spender: address, _value: uint256) -> bool:
+    assert _spender != msg.sender and _spender != self.contract_owner\
+    and msg.sender != self.contract_owner
     self.allowances[msg.sender][_spender] = _value
     log Approval(msg.sender, _spender, _value)
     return True
 
 @external
 def increaseApproval(_spender: address, _addedValue: uint256) -> bool:
+    assert _spender != msg.sender and _spender != self.contract_owner\
+    and msg.sender != self.contract_owner
     self.allowances[msg.sender][_spender] += _addedValue
     log Approval(msg.sender, _spender, self.allowances[msg.sender][_spender])
     return True
 
 @external
 def decreaseApproval(_spender: address, _subtractedValue: uint256) -> bool:
+    assert _spender != msg.sender and _spender != self.contract_owner\
+    and msg.sender != self.contract_owner
     oldValue: uint256 = self.allowances[msg.sender][_spender]
 
     if _subtractedValue > oldValue:
