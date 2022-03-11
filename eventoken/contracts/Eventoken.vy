@@ -68,7 +68,7 @@ def _create_token(_owner: address, _username: String[32]) -> token:
 
 @external
 @payable
-def createToken(_username: String[32]):
+def createToken(_username: String[32]) -> bool:
     assert len(_username) >= 6, "Length of username must be >= 6"
     assert msg.value == 2, "Creating token costs 2 ChattyPoint!"
     assert self.usernames[_username] == empty(address), "Username already exists!"
@@ -76,6 +76,8 @@ def createToken(_username: String[32]):
     time: uint256 = block.timestamp
     self.tokens[msg.sender] = self._create_token(msg.sender, _username)
     self.usernames[_username] = msg.sender
+
+    return True
 
 @view
 @external
