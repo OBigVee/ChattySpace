@@ -1,25 +1,44 @@
 # @version ^0.3.1
 
+# This token contract follows the ERC20 standard for tokens.
 from vyper.interfaces import ERC20
 implements: ERC20
 
 # Events
+#   - This event logs that an address has been granted access
+#       to an amount of tokens from another.
 event Approval:
     owner: indexed(address)
     spender: indexed(address)
     value: uint256
 
+#   - This event logs that the sender has transfered an amount of tokens
+#        to an address.
 event Transfer:
     sender: indexed(address)
     reciever: indexed(address)
     value: uint256
 
+#   - This event logs that the owner of the contract has successfully minted
+#       a certain amount of tokens to an address.
 event Mint:
     reciever: indexed(address)
     value: uint256
- 
-# Storage Variables
 
+#   - This event logs that the current address is mining a random
+#       amount of tokens that depends on the address id.
+event Mine:
+    benefactor: indexed(address)
+    value: uint256
+
+#   - This event logs that an address account has been deleted/deactivated
+#       from the blockchain.
+event Delete:
+    victim: indexed(address)
+    username: String[32]
+    point_balance: uint256
+
+# Storage Variables
 name: public(String[32]) # Name of the token contract
 symbol: public(String[8]) # Symbol of token contract
 decimals: public(uint256) # Number of decimal places
@@ -34,13 +53,18 @@ struct token:
     is_active: bool # If owner's token is active
     percent_worth: decimal
 
-tokens: public(HashMap[address, token]) # owner_address/token pair
+tokens: public(HashMap[address, token]) # owner_address/token pair.
+# Each address can allow other addresses to spend an amount of tokens
 allowances: HashMap[address, HashMap[address, uint256]]
-usernames: public(HashMap[String[32], address])
+usernames: public(HashMap[String[32], address]) # username/address pair.
 
 # Functions
 @external
 def __init__(_name: String[32], _symbol: String[8], _total_supply: uint256):
+    """
+    Initializes the storage variables with default values that may not be changed
+    during the lifecycle of the contract.
+    """
     self.name = _name
     self.symbol = _symbol
     self.decimals = 0
@@ -93,6 +117,8 @@ def allowance(_owner: address, _spender: address) -> uint256:
 def approve(_spender: address, _value: uint256) -> bool:
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
+    assert self.tokens[_spender].is_active == True, "Address is not active!"
+
     self.allowances[msg.sender][_spender] = _value
     log Approval(msg.sender, _spender, _value)
     return True
@@ -101,6 +127,8 @@ def approve(_spender: address, _value: uint256) -> bool:
 def increaseApproval(_spender: address, _addedValue: uint256) -> bool:
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
+    assert self.tokens[_spender].is_active == True, "Address is not active!"
+
     self.allowances[msg.sender][_spender] += _addedValue
     log Approval(msg.sender, _spender, self.allowances[msg.sender][_spender])
     return True
@@ -109,6 +137,8 @@ def increaseApproval(_spender: address, _addedValue: uint256) -> bool:
 def decreaseApproval(_spender: address, _subtractedValue: uint256) -> bool:
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
+    assert self.tokens[_spender].is_active == True, "Address is not active!"
+
     oldValue: uint256 = self.allowances[msg.sender][_spender]
 
     if _subtractedValue > oldValue:
@@ -170,18 +200,17 @@ def mint(_to: address, amount: uint256) -> bool:
     assert self.tokens[_to].point_balance >= 10, "Point Balance must be >= 10CP!"
     # assert block.timestamp >= self.tokens[_to].date_created + 86400,\
     # "Minting can only be performed for accounts >= 1 day!"
+    assert self.tokens[_to].is_active == True, "Address is not active!"
 
     self.totalSupply += amount
     self.tokens[_to].point_balance += amount
-    self.tokens[_to].percent_worth = (
-        convert(self.tokens[_to].point_balance*100, decimal)
-    )/convert(self.totalSupply, decimal)
+    self.tokens[_to].percent_worth = self._compute_percent_worth(_to)
 
     log Mint(_to, amount)
     return True
 
 @external
-def mine_points(_to: address):
+def mine(_to: address):
     assert _to == msg.sender, "You can only mine for yourself!"
     assert msg.sender != self.contract_owner, "Contract owner is not permitted to mine!"
     assert self.tokens[_to].point_balance < 100, "Request minting from the contract owner."
@@ -189,8 +218,29 @@ def mine_points(_to: address):
     _id: uint256 = self.tokens[_to].owner_id
     for i in range(0, 100):
         temp: uint256 = uint256_addmod(_id, i, 2000)
-        if ((i * temp) >= 20) and ((i * temp) <= 2000):
+        if ((i * temp) >= 50) and ((i * temp) <= 2000):
             self.tokens[_to].point_balance += (i*temp)
             self.totalSupply += (i*temp)
             self.tokens[_to].percent_worth = self._compute_percent_worth(_to)
+
+            log Mine(_to, i*temp)
             break
+
+
+@external
+def delete(_username: String[32]):
+    # The username is used to look up the address, so this ensures that it exists
+    assert self.usernames[_username] != empty(address),\
+    concat(_username, " does not exists!")
+
+    _victim: address = self.usernames[_username]
+    _pb: uint256 = self.tokens[_victim].point_balance
+
+    assert self.tokens[_victim].is_active == True,\
+    concat(_username, " is no longer active!")
+
+    self.usernames[_username] = empty(address)
+    self.totalSupply -= self.tokens[_victim].point_balance
+    self.tokens[_victim] = empty(token)
+    
+    log Delete(_victim, _username, _pb)
