@@ -76,6 +76,11 @@ def __init__(_name: String[32], _symbol: String[8], _total_supply: uint256):
 
 @internal
 def _create_token(_owner: address, _username: String[32]) -> token:
+    """
+    This is an internal function that is called once a token account must be created.
+    It cannot be called by the contract owner. The username is useful for generating
+    the ID of the token account.
+    """
     assert _owner != self.contract_owner, "Using minter's address is disallowed!"
     assert self.tokens[_owner] == empty(token), "Account already exists for that address!"
     self.usernames[_username] = _owner
@@ -93,6 +98,10 @@ def _create_token(_owner: address, _username: String[32]) -> token:
 @external
 @payable
 def createToken(_username: String[32]) -> bool:
+    """
+    Checks that the details provided for the account to be created are
+    correct. 2CP is used to create a token.
+    """
     assert len(_username) >= 6, "Length of username must be >= 6"
     assert msg.value == 2, "Creating token costs 2 ChattyPoint!"
     assert self.usernames[_username] == empty(address), "Username already exists!"
@@ -106,15 +115,23 @@ def createToken(_username: String[32]) -> bool:
 @view
 @external
 def balanceOf(_token_owner: address) -> uint256:
+    "Returns the point balance of a token account."
     return self.tokens[_token_owner].point_balance
 
 @view
 @external
 def allowance(_owner: address, _spender: address) -> uint256:
+    "Returns the amount that _owner makes available for _spender to spend."
     return self.allowances[_owner][_spender]
 
 @external
 def approve(_spender: address, _value: uint256) -> bool:
+    """
+    This is used to approve that an address can spend a sum of points from
+    another address. It is ensured that the spender and the owner of the
+    address are not the same and the spender and the owner are not the contract
+    owner.
+    """
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
     assert self.tokens[_spender].is_active == True, "Address is not active!"
@@ -125,6 +142,10 @@ def approve(_spender: address, _value: uint256) -> bool:
 
 @external
 def increaseApproval(_spender: address, _addedValue: uint256) -> bool:
+    """
+    This is called to increase the amount that the spender can spend from
+    the owner's point balance.
+    """
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
     assert self.tokens[_spender].is_active == True, "Address is not active!"
@@ -135,6 +156,7 @@ def increaseApproval(_spender: address, _addedValue: uint256) -> bool:
 
 @external
 def decreaseApproval(_spender: address, _subtractedValue: uint256) -> bool:
+    "This is the reverse of increaseApproval method."
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
     assert self.tokens[_spender].is_active == True, "Address is not active!"
@@ -151,6 +173,10 @@ def decreaseApproval(_spender: address, _subtractedValue: uint256) -> bool:
 
 @internal
 def _compute_percent_worth(_addr: address) -> decimal:
+    """
+    Another internal method that calculates the percentage worth of an address
+    based on the ratio of the amount of that address to the total supply.
+    """
     return (convert(self.tokens[_addr].point_balance*100, decimal)
     )/convert(self.totalSupply, decimal)
 
@@ -172,6 +198,10 @@ def _transfer(_from: address, _to: address, _value: uint256):
 
 @external
 def transfer(_to: address, _value: uint256) -> bool:
+    """
+    Do an account owner wants to transfer points to another? It can use
+    this to achieve it.
+    """
     assert _to != msg.sender, "Cannot send points to the same address!"
     assert (self.tokens[_to] != empty(token)),\
      "Restricted; Check address properly!"
@@ -181,6 +211,11 @@ def transfer(_to: address, _value: uint256) -> bool:
 
 @external
 def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
+    """
+    This is used for allowances transfers alone. An account benefactor can transfer
+    a sum of points to another from the account's point balance. This change only
+    reflects on the allowances, not on their token accounts.
+    """
     assert _from != _to, "Cannot send points to the same address!"
     assert (self.tokens[msg.sender] != empty(token)) and (self.tokens[_to] != empty(token)),\
      "Restricted; Check address properly!"
@@ -193,6 +228,11 @@ def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
 
 @external
 def mint(_to: address, amount: uint256) -> bool:
+    """
+    The contract owner has the right, he alone, to mint points for other addresses.
+    It is assumed that an account owner makes a request to the contract owner for points.
+    The contract owner can then mint points to the account owner based on its desire.
+    """
     assert self.contract_owner == msg.sender, "You do not have 'mint' privilege!"
     assert self.contract_owner != _to,\
     "Only the deployer can mint for others!"
@@ -211,6 +251,10 @@ def mint(_to: address, amount: uint256) -> bool:
 
 @external
 def mine(_to: address):
+    """
+    This is where the contract owner does not have a right. An address can
+    mine points for itself.
+    """
     assert _to == msg.sender, "You can only mine for yourself!"
     assert msg.sender != self.contract_owner, "Contract owner is not permitted to mine!"
     assert self.tokens[_to].point_balance < 100, "Request minting from the contract owner."
