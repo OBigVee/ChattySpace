@@ -17,7 +17,7 @@ def eventoken():
     return token
 
 
-def test_init_works(eventoken):
+def test_init(eventoken):
     assert eventoken.usernames("Minter") == eventoken.contract_owner()
     assert eventoken.totalSupply() == TOTAL_SUPPLY
     assert eventoken.name() == NAME
@@ -44,17 +44,17 @@ def test_transfer_revert(eventoken):
 
 def test_mine_points(eventoken):
     with brownie.reverts("You can only mine for yourself!"):
-        eventoken.mine_points(accounts[1], {'from': accounts[2]})
+        eventoken.mine(accounts[1], {'from': accounts[2]})
     with brownie.reverts("Contract owner is not permitted to mine!"):
-        eventoken.mine_points(accounts[0], {'from': accounts[0]})
-    eventoken.mine_points(accounts[1], {'from': accounts[1]})
-    eventoken.mine_points(accounts[2], {'from': accounts[2]})
+        eventoken.mine(accounts[0], {'from': accounts[0]})
+    eventoken.mine(accounts[1], {'from': accounts[1]})
+    eventoken.mine(accounts[2], {'from': accounts[2]})
     assert eventoken.balanceOf(accounts[1]) > 0
     assert eventoken.balanceOf(accounts[2]) > 0
     return eventoken
 
 
-def test_mine(eventoken):
+def test_mint(eventoken):
     with brownie.reverts("You do not have 'mint' privilege!"):
         eventoken.mint(accounts[1], 40, {'from': accounts[1]})
     with brownie.reverts("Only the deployer can mint for others!"):
@@ -100,3 +100,33 @@ def test_decrease_approval(eventoken):
     allowance = eventoken.allowance(accounts[2], accounts[1])
     eventoken.decreaseApproval(accounts[1], 100, {'from': accounts[2]})
     assert eventoken.allowance(accounts[2], accounts[1]) - allowance == 0
+
+
+def test_transfer(eventoken):
+    eventoken = test_mine_points(eventoken)
+    p_bal1 = eventoken.balanceOf(accounts[1])
+    p_bal2 = eventoken.balanceOf(accounts[2])
+
+    eventoken.transfer(accounts[1], 100, {'from': accounts[2]})
+    assert eventoken.balanceOf(accounts[1]) == p_bal1 + 100
+    assert eventoken.balanceOf(accounts[2]) == p_bal2 - 100
+
+
+def test_delete(eventoken):
+    eventoken = test_mine_points(eventoken)
+    with brownie.reverts("MegaTron does not exists!"):
+        eventoken.delete('MegaTron')
+    with brownie.reverts("Minter is not active!"):
+        eventoken.delete('Minter')
+
+    address = eventoken.usernames('B_Keys')
+    bal = eventoken.balanceOf(address)
+    total_supply = eventoken.totalSupply() - bal
+
+    assert bal > 0
+    eventoken.delete('B_Keys')
+    assert eventoken.balanceOf(address) == 0
+    assert eventoken.totalSupply() == total_supply
+
+    with brownie.reverts('B_Keys does not exists!'):
+        eventoken.delete('B_Keys')

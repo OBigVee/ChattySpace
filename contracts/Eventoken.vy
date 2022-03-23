@@ -134,7 +134,7 @@ def approve(_spender: address, _value: uint256) -> bool:
     """
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
-    assert self.tokens[_spender].is_active == True, "Address is not active!"
+    assert self.tokens[_spender].is_active == True, "This address is not active!"
 
     self.allowances[msg.sender][_spender] = _value
     log Approval(msg.sender, _spender, _value)
@@ -148,7 +148,7 @@ def increaseApproval(_spender: address, _addedValue: uint256) -> bool:
     """
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
-    assert self.tokens[_spender].is_active == True, "Address is not active!"
+    assert self.tokens[_spender].is_active == True, "This address is not active!"
 
     self.allowances[msg.sender][_spender] += _addedValue
     log Approval(msg.sender, _spender, self.allowances[msg.sender][_spender])
@@ -159,7 +159,7 @@ def decreaseApproval(_spender: address, _subtractedValue: uint256) -> bool:
     "This is the reverse of increaseApproval method."
     assert _spender != msg.sender and _spender != self.contract_owner\
     and msg.sender != self.contract_owner
-    assert self.tokens[_spender].is_active == True, "Address is not active!"
+    assert self.tokens[_spender].is_active == True, "This address is not active!"
 
     oldValue: uint256 = self.allowances[msg.sender][_spender]
 
@@ -203,7 +203,7 @@ def transfer(_to: address, _value: uint256) -> bool:
     this to achieve it.
     """
     assert _to != msg.sender, "Cannot send points to the same address!"
-    assert (self.tokens[_to] != empty(token)),\
+    assert self.tokens[_to].is_active == True,\
      "Restricted; Check address properly!"
 
     self._transfer(msg.sender, _to, _value)
@@ -236,6 +236,7 @@ def mint(_to: address, amount: uint256) -> bool:
     assert self.contract_owner == msg.sender, "You do not have 'mint' privilege!"
     assert self.contract_owner != _to,\
     "Only the deployer can mint for others!"
+    assert self.tokens[_to].is_active == True, "This address is not active!"
     assert amount >= 20, "Too small; must be >= 20CP!"
     assert self.tokens[_to].point_balance >= 10, "Point Balance must be >= 10CP!"
     # assert block.timestamp >= self.tokens[_to].date_created + 86400,\
@@ -257,6 +258,7 @@ def mine(_to: address):
     """
     assert _to == msg.sender, "You can only mine for yourself!"
     assert msg.sender != self.contract_owner, "Contract owner is not permitted to mine!"
+    assert self.tokens[_to].is_active == True, "This address is not active!"
     assert self.tokens[_to].point_balance < 100, "Request minting from the contract owner."
 
     _id: uint256 = self.tokens[_to].owner_id
@@ -272,19 +274,21 @@ def mine(_to: address):
 
 
 @external
-def delete(_username: String[32]):
+def delete(_username: String[32]) -> bool:
     # The username is used to look up the address, so this ensures that it exists
     assert self.usernames[_username] != empty(address),\
-    concat(_username, " does not exists!")
+    concat(_username, " does not exists!") # Checks if username exists
 
     _victim: address = self.usernames[_username]
-    _pb: uint256 = self.tokens[_victim].point_balance
 
     assert self.tokens[_victim].is_active == True,\
-    concat(_username, " is no longer active!")
+    concat(_username, " is not active!") # Checks if account still exists.
+
+    _pb: uint256 = self.tokens[_victim].point_balance
 
     self.usernames[_username] = empty(address)
-    self.totalSupply -= self.tokens[_victim].point_balance
     self.tokens[_victim] = empty(token)
+    self.totalSupply -= _pb
     
     log Delete(_victim, _username, _pb)
+    return True
