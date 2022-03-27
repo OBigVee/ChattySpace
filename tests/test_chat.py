@@ -24,3 +24,10 @@ def test_sendMessage(chat, accounts):
 def test_readMessage(chat, accounts, chain):
     assert chat.sendMessage(accounts[1], "hello", {'from': accounts[0]})
     assert chat.readMessage(accounts[1], {'from': accounts[0]}) == (accounts[0], chain[-1].timestamp, "hello")
+
+def test_createPost(chat, accounts):
+    assert chat.createPost("hello", {'from': accounts[0]})
+
+def test_getPosts(chat, accounts, chain):
+    assert chat.createPost("hello", {'from': accounts[0]})
+    assert chat.getPosts({'from': accounts[0]}) == (accounts[0], chain[-1].timestamp, "hello")

@@ -10,18 +10,26 @@ struct user:
     name: String[50]
     friendList: friend[100]
 
-# message construct stores the single chat message and its metadata
+# message struct stores the single chat message and its metadata
 struct message:
     sender: address
     _timestamp: uint256
     _msg: String[100]
 
-
+# post struct stores the single post and its metadata
+struct post:
+    sender: address
+    _timestamp: uint256
+    _post: String[100]
+    
 # Collection of users registered on the application
 userList: HashMap[address, user]
 
 # Collection of messages communicated in a channel between two users
 allMessages: HashMap[bytes32, message]
+
+# Collection of messages communicated in a channel between two users
+allPosts: HashMap[bytes32, post]
 
 # It checks whether a user(identified by its public key)
 # has created an account on this application or not    
@@ -112,3 +120,23 @@ def readMessage(_friend_key: address) -> message:
     chatcode: bytes32 = self._getChatCode(msg.sender, _friend_key)
     return self.allMessages[chatcode]
 
+@internal
+@pure # does not read from the contract state or environmental variable
+def _getPostId(_pubkey1: address) -> bytes32:
+    return keccak256(_abi_encode(_pubkey1, method_id=method_id("_getChatCode()")))
+
+# creates a new post
+@external
+def createPost(_post: String[100]):
+    assert self.checkUserExists(msg.sender) == False, "Create an account first"
+    
+    postId: bytes32 = self._getPostId(msg.sender)
+    newPost: post = post({sender: msg.sender, _timestamp: block.timestamp, _post: _post})
+    self.allPosts[postId] = newPost
+
+# Returns all Posts made by users.
+@view
+@external
+def getPosts() -> post:
+    postId: bytes32 = self._getPostId(msg.sender)
+    return self.allPosts[postId]

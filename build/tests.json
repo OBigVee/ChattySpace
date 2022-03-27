@@ -1,6 +1,6 @@
 {
   "contracts": {
-    "Chat": "8ba8d9a1159c65ea80d2906e60b405dcb3a1f8f5"
+    "Chat": "8a2aa64fe5e6a813cd7e783de854fb571174b49b"
   },
   "tests": {
     "tests/test_chat.py": {
@@ -8,8 +8,8 @@
       "isolated": [
         "Chat"
       ],
-      "results": "......",
-      "sha1": "d4d77d65da43c71d6aabc5ff258d1567bd0f76f6",
+      "results": "........",
+      "sha1": "a490677cbdeda973c6120f09852cd4cc9097ff98",
       "txhash": []
     }
   },
