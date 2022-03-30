@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hurricane&family=Poppins:wght@300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hurricane&family=Palette+Mosaic&family=Poppins:wght@300&display=swap');
 
 :root {
     --primary-color-hue: 252;
@@ -45,6 +47,16 @@ body {
 .container {
     width: 80%;
     margin: 0 auto;
+}
+
+.logo {
+    font-size: 0.9rem;
+    box-shadow: 0 0 1rem var(--color-primary);
+    border-radius: 30% 20%;
+    text-transform: uppercase;
+    color: var(--color-dark);
+    font-family: 'Palette Mosaic';
+    background: linear-gradient(to left top, var(--color-primary), var(--color-success));
 }
 
 .profile-photo {
