@@ -15,7 +15,7 @@ server_socket.listen()
 socket_list = [server_socket]
 clients = {}
 
-print(f" ::: Listening for connections on {IP}:{PORT} ...")
+print(f" ::::: Listening for connections on {IP}:{PORT} ...")
 
 # handle recieved messages
 def recieve_mssg(client_socket):
