@@ -1,0 +1,17 @@
+{
+  "contracts": {
+    "Chat": "8a2aa64fe5e6a813cd7e783de854fb571174b49b"
+  },
+  "tests": {
+    "tests/test_chat.py": {
+      "coverage": false,
+      "isolated": [
+        "Chat"
+      ],
+      "results": "........",
+      "sha1": "a490677cbdeda973c6120f09852cd4cc9097ff98",
+      "txhash": []
+    }
+  },
+  "tx": {}
+}
